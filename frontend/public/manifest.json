@@ -1,0 +1,19 @@
+{
+  "short_name": "HRMastery",
+  "name": "HRMastery Platform",
+  "description": "Modern Hiring & HR Management",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#F8F9FA",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#008BDC",
+  "orientation": "portrait-primary"
+}
