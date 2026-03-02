@@ -8,23 +8,25 @@ import {
 } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { Briefcase } from "lucide-react";
+
+/* ========================================================= */
+/* 🚀 EAGER LOADING (CRITICAL PATH)                          */
+/* These load instantly without extra network requests.      */
+/* ========================================================= */
+import AppLayout from "./user/layout/AppLayput";
+import HRLayout from "./company/features/jobs/layout/HRLayout";
+import HRMHomepage from "./pages/public/HRMHomepage";
+import CandidateLoginPage from "./pages/CandidateLoginPage";
+import CandidateSignupPage from "./pages/CandidateSignupPage";
+import HRLogin from "./pages/public/HRLogin";
 import UnauthorizedPage from "./pages/UnauthorizedPage";
+import ContactSales from "./pages/public/ContactSales";
+import CompanyFreeTrial from "./pages/public/CompanyFreeTrial";
 
-/* ================= LAZY LOAD ================= */
-
-/* Layouts */
-const AppLayout = lazy(() => import("./user/layout/AppLayput"));
-const HRLayout = lazy(() => import("./company/features/jobs/layout/HRLayout"));
-
-/* Public */
-const HRMHomepage = lazy(() => import("./pages/public/HRMHomepage"));
-const CandidateLoginPage = lazy(() => import("./pages/CandidateLoginPage"));
-const CandidateSignupPage = lazy(() => import("./pages/CandidateSignupPage"));
-const HRLogin = lazy(() => import("./pages/public/HRLogin"));
-const CompanyFreeTrial = lazy(() => import("./pages/public/CompanyFreeTrial"));
-const ContactSales = lazy(() => import("./pages/public/ContactSales"));
-
-/* Company / HR */
+/* ========================================================= */
+/* 🐢 LAZY LOADING (NON-CRITICAL / PROTECTED ROUTES)         */
+/* These load in the background only when needed.            */
+/* ========================================================= */
 const CompanyDashboard = lazy(() => import("./company/pages/CompanyDashboard"));
 const CompanyJobsPage = lazy(
   () => import("./company/features/jobs/pages/CompanyJobsPage"),
@@ -45,8 +47,6 @@ const HRSettingsPage = lazy(
   () => import("./company/features/setting/HRSettingsPage"),
 );
 const HROnboardingPage = lazy(() => import("./common/HROnboardingPage"));
-
-/* Candidate */
 const JobsPage = lazy(() => import("./user/features/jobs/pages/JobsPage"));
 const JobLayout = lazy(() => import("./user/layout/JobLayout"));
 const CandidateOnboarding = lazy(
@@ -54,11 +54,10 @@ const CandidateOnboarding = lazy(
 );
 
 /* ================= GLOBAL LOADER ================= */
-
 const GlobalLoader = () => (
   <div className="fixed inset-0 z-[999] bg-[#F8F9FA] flex flex-col items-center justify-center">
-    <div className="flex flex-col items-center animate-in zoom-in-95 duration-500">
-      <div className="bg-[#008BDC] p-3 rounded-xl shadow-lg mb-4 animate-pulse">
+    <div className="flex flex-col items-center animate-in zoom-in-95 duration-300">
+      <div className="bg-[#008BDC] p-3 rounded-xl shadow-[0_8px_30px_rgba(0,139,220,0.3)] mb-4 animate-pulse">
         <Briefcase className="w-8 h-8 text-white" />
       </div>
       <span className="text-3xl font-black text-[#212121]">
@@ -69,72 +68,66 @@ const GlobalLoader = () => (
 );
 
 /* ================= PRIVATE ROUTE ================= */
-
 const PrivateRoute = ({ allowedRoles }) => {
   const { user, isAuthenticated, loading } = useAuth();
 
+  // Only block rendering if checking auth state for a PROTECTED route
   if (loading) return <GlobalLoader />;
 
   if (!isAuthenticated) return <Navigate to="/candidate/login" replace />;
 
-  if (allowedRoles && !allowedRoles.includes(user.role))
+  if (allowedRoles && !allowedRoles.includes(user?.role)) {
     return <Navigate to="/unauthorized" replace />;
+  }
 
   return <Outlet />;
 };
 
 /* ================= ROLE REDIRECT ================= */
-
 const RoleRedirect = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
 
+  // Wait for Firebase to figure out who the user is
+  if (loading) return <GlobalLoader />;
+
+  // If not logged in, show the homepage instantly
   if (!isAuthenticated) return <HRMHomepage />;
 
-  switch (user.role) {
+  // If logged in, redirect them to their specific dashboard
+  switch (user?.role) {
     case "candidate":
       return <Navigate to="/candidate/dashboard" replace />;
-
     case "hr":
       return <Navigate to="/hr" replace />;
-
     case "company_admin":
       return <Navigate to="/company/dashboard" replace />;
-
     case "admin":
       return <Navigate to="/admin" replace />;
-
     default:
       return <Navigate to="/unauthorized" replace />;
   }
 };
 
 /* ================= MAIN APP ================= */
-
 const App = () => {
-  const { loading } = useAuth();
-
-  if (loading) return <GlobalLoader />;
+  // ⚡ REMOVED Global Loading block here!
+  // Public pages will now render instantly while Firebase loads in the background.
 
   return (
     <BrowserRouter>
+      {/* Suspense only wraps the routes now, handling lazy-loaded chunks */}
       <Suspense fallback={<GlobalLoader />}>
         <Routes>
-          {/* ROOT */}
+          {/* ROOT - Intelligent Redirect */}
           <Route path="/" element={<RoleRedirect />} />
 
-          {/* PUBLIC ROUTES */}
+          {/* ================= PUBLIC ROUTES (INSTANT LOAD) ================= */}
           <Route path="/contact-sales" element={<ContactSales />} />
           <Route path="/candidate/login" element={<CandidateLoginPage />} />
           <Route path="/candidate/signup" element={<CandidateSignupPage />} />
           <Route path="/hr/login" element={<HRLogin />} />
           <Route path="/free-trial" element={<CompanyFreeTrial />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
-          <Route path="/onboarding/hr" element={<HROnboardingPage />} />
-          <Route
-            path="/onboarding/candidate"
-            element={<CandidateOnboarding />}
-          />
-          <Route path="jobs/:id/apply" element={<JobApplicationForm />} />
 
           {/* PUBLIC JOB LISTINGS */}
           <Route element={<AppLayout />}>
@@ -142,23 +135,38 @@ const App = () => {
             <Route path="/jobs/:id" element={<JobDetailsPage />} />
           </Route>
 
-          {/* CANDIDATE PROTECTED */}
+          <Route path="jobs/:id/apply" element={<JobApplicationForm />} />
+
+          {/* ================= PROTECTED ROUTES (LAZY LOADED) ================= */}
+
+          {/* CANDIDATE */}
           <Route element={<PrivateRoute allowedRoles={["candidate"]} />}>
+            <Route
+              path="/onboarding/candidate"
+              element={<CandidateOnboarding />}
+            />
             <Route
               path="/candidate/dashboard"
               element={<div>Candidate Dashboard</div>}
             />
           </Route>
 
-          {/* COMPANY ADMIN PROTECTED */}
-          <Route element={<PrivateRoute allowedRoles={["company_admin"]} />}>
+          {/* COMPANY ADMIN */}
+          <Route
+            element={
+              <PrivateRoute allowedRoles={["company_admin", "admin"]} />
+            }>
             <Route path="/company/dashboard" element={<CompanyDashboard />} />
             <Route path="/company/jobs" element={<CompanyJobsPage />} />
             <Route path="/company/jobs/create" element={<JobPostPage />} />
           </Route>
 
-          {/* HR PROTECTED */}
-          <Route element={<PrivateRoute allowedRoles={["hr"]} />}>
+          {/* HR */}
+          <Route
+            element={
+              <PrivateRoute allowedRoles={["hr", "company_admin", "admin"]} />
+            }>
+            <Route path="/onboarding/hr" element={<HROnboardingPage />} />
             <Route path="/hr" element={<HRLayout />}>
               <Route index element={<HRDashboard />} />
               <Route path="jobs" element={<CompanyJobsPage />} />
@@ -168,7 +176,7 @@ const App = () => {
             </Route>
           </Route>
 
-          {/* ADMIN PROTECTED */}
+          {/* SYSTEM ADMIN */}
           <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
             <Route path="/admin" element={<div>Admin Dashboard</div>} />
             <Route

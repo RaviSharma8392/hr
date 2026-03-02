@@ -9,7 +9,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-export default function PremiumDarkFooter() {
+export default function HRFooter() {
   const currentYear = new Date().getFullYear();
 
   return (

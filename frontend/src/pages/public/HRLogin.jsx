@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { loginWithEmail, loginWithGoogle } from "../../services/AuthService";
-import { useAuth } from "../../context/AuthContext";
 
 import {
   Briefcase,
@@ -14,7 +13,6 @@ import {
 } from "lucide-react";
 
 const HRLogin = () => {
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({ email: "", password: "" });
@@ -22,10 +20,16 @@ const HRLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const inputStyle =
+    "w-full px-4 py-3.5 bg-[#F8F9FA] border border-[#DDD] rounded-lg text-[#212121] text-[15px] font-medium placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#008BDC] focus:ring-1 focus:ring-[#008BDC] transition-all";
+
+  const labelStyle =
+    "block text-[12px] font-bold text-[#484848] mb-1.5 uppercase tracking-wider";
+
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  /* Email Login */
+  /* ================= EMAIL LOGIN (HR ONLY) ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -34,39 +38,35 @@ const HRLogin = () => {
     try {
       const user = await loginWithEmail(form.email, form.password);
 
-      if (["hr", "company_admin", "admin"].includes(user.role)) {
-        login(user);
-        if (user.role === "admin") navigate("/admin");
-        else if (user.role === "company_admin") navigate("/company/dashboard");
-        else navigate("/hr");
-      } else {
-        setError(
-          "You do not have Employer/HR privileges. Please use the Candidate login.",
+      if (user.role !== "hr") {
+        throw new Error(
+          "Access denied. This portal is restricted to HR accounts only.",
         );
-        navigate("/unauthorized");
       }
+
+      navigate("/hr", { replace: true });
     } catch (err) {
-      setError(err.message || "Invalid email or password. Please try again.");
+      setError(err.message || "Login failed.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  /* Google Login */
+  /* ================= GOOGLE LOGIN (HR ONLY) ================= */
   const handleGoogle = async () => {
     setError("");
     setIsLoading(true);
+
     try {
       const user = await loginWithGoogle();
 
-      if (["hr", "company_admin", "admin"].includes(user.role)) {
-        login(user);
-        if (user.role === "admin") navigate("/admin");
-        else if (user.role === "company_admin") navigate("/company/dashboard");
-        else navigate("/hr");
-      } else {
-        setError("This Google account does not have Employer access.");
+      if (user.role !== "hr") {
+        throw new Error(
+          "This Google account is not registered as an HR account.",
+        );
       }
+
+      navigate("/hr", { replace: true });
     } catch (err) {
       setError(err.message || "Google authentication failed.");
     } finally {
@@ -74,22 +74,13 @@ const HRLogin = () => {
     }
   };
 
-  const inputStyle =
-    "w-full px-4 py-3.5 bg-[#F8F9FA] border border-[#DDD] rounded-lg text-[#212121] text-[15px] font-medium placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-[#008BDC] focus:ring-1 focus:ring-[#008BDC] transition-all";
-  const labelStyle =
-    "block text-[12px] font-bold text-[#484848] mb-1.5 uppercase tracking-wider";
-
   return (
     <div className="min-h-screen w-full flex font-sans bg-white md:bg-[#F8F9FA] lg:bg-white">
-      {/* ========================================================= */}
-      {/* LEFT PANEL - Premium Branding (Hidden on Mobile/Tablet) */}
-      {/* ========================================================= */}
+      {/* LEFT PANEL */}
       <div className="hidden lg:flex lg:w-1/2 bg-[#0F172A] relative flex-col justify-between p-12 xl:p-16 overflow-hidden">
-        {/* Decorative Background Accents (Blue instead of Pink) */}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-[#008BDC] opacity-20 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-blue-400 opacity-10 rounded-full blur-3xl pointer-events-none"></div>
 
-        {/* Top: Logo */}
         <Link
           to="/"
           className="relative z-10 flex items-center gap-2 hover:opacity-90 transition-opacity w-max">
@@ -101,7 +92,6 @@ const HRLogin = () => {
           </span>
         </Link>
 
-        {/* Middle: Value Proposition */}
         <div className="relative z-10 max-w-lg mt-12 xl:mt-0">
           <div className="inline-flex items-center gap-1.5 bg-[#1E293B] border border-gray-700 text-gray-300 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest mb-6">
             <ShieldCheck size={14} className="text-[#008BDC]" /> Enterprise
@@ -117,14 +107,11 @@ const HRLogin = () => {
           </p>
         </div>
 
-        {/* Bottom: Testimonial */}
         <div className="relative z-10 bg-[#1E293B]/50 border border-gray-800 backdrop-blur-sm p-6 rounded-xl mt-12">
           <div className="flex gap-1 text-amber-400 mb-3">
-            <Star size={16} fill="currentColor" />
-            <Star size={16} fill="currentColor" />
-            <Star size={16} fill="currentColor" />
-            <Star size={16} fill="currentColor" />
-            <Star size={16} fill="currentColor" />
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} size={16} fill="currentColor" />
+            ))}
           </div>
           <p className="text-gray-300 font-medium leading-relaxed mb-5 text-[15px]">
             "Switching to HRMastery completely transformed how we manage our
@@ -149,23 +136,8 @@ const HRLogin = () => {
         </div>
       </div>
 
-      {/* ========================================================= */}
-      {/* RIGHT PANEL - Login Form (Centered Card on all devices) */}
-      {/* ========================================================= */}
+      {/* RIGHT PANEL */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-4 sm:px-12 py-8 relative pb-safe">
-        {/* Mobile Logo (Visible only on mobile/tablet) */}
-        <div className="lg:hidden absolute top-6 left-6 sm:top-8 sm:left-8">
-          <Link to="/" className="flex items-center gap-2 hover:opacity-90">
-            <div className="bg-[#008BDC] p-1.5 rounded-md text-white shadow-sm">
-              <Briefcase className="w-5 h-5" />
-            </div>
-            <span className="text-xl font-black text-[#212121] tracking-tight">
-              HRMastery<span className="text-[#008BDC]">.</span>
-            </span>
-          </Link>
-        </div>
-
-        {/* Login Card */}
         <div className="w-full max-w-[440px] mt-12 lg:mt-0 bg-white md:bg-transparent lg:bg-white md:rounded-2xl lg:rounded-none md:border lg:border-none border-[#EEE] md:shadow-[0_8px_40px_rgba(0,0,0,0.04)] lg:shadow-none p-4 sm:p-10 lg:p-0">
           <div className="mb-8 lg:mb-10">
             <h2 className="text-2xl sm:text-3xl font-black text-[#212121] tracking-tight mb-2">
@@ -176,13 +148,10 @@ const HRLogin = () => {
             </p>
           </div>
 
-          {/* Error Banner */}
           {error && (
-            <div className="mb-6 bg-red-50 border border-red-200 p-4 rounded-lg flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+            <div className="mb-6 bg-red-50 border border-red-200 p-4 rounded-lg flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-              <p className="text-[13px] font-semibold text-red-700 leading-relaxed">
-                {error}
-              </p>
+              <p className="text-[13px] font-semibold text-red-700">{error}</p>
             </div>
           )}
 
@@ -190,7 +159,7 @@ const HRLogin = () => {
             type="button"
             onClick={handleGoogle}
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 py-3.5 px-4 border-2 border-[#EEE] rounded-lg text-[14px] font-bold text-[#484848] bg-white hover:bg-[#F8F9FA] hover:border-[#DDD] transition-all duration-200 shadow-sm active:scale-95">
+            className="w-full flex items-center justify-center gap-3 py-3.5 px-4 border-2 border-[#EEE] rounded-lg text-[14px] font-bold text-[#484848] bg-white hover:bg-[#F8F9FA] transition-all active:scale-95">
             <img
               src="https://www.svgrepo.com/show/475656/google-color.svg"
               alt="Google"
@@ -208,44 +177,27 @@ const HRLogin = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email Row */}
             <div>
-              <label htmlFor="email" className={labelStyle}>
-                Work Email
-              </label>
+              <label className={labelStyle}>Work Email</label>
               <input
-                id="email"
                 name="email"
                 type="email"
                 value={form.email}
                 onChange={handleChange}
-                autoComplete="email"
                 required
                 placeholder="admin@company.com"
                 className={inputStyle}
               />
             </div>
 
-            {/* Password Row with Native Reveal Toggle */}
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="password" className={`${labelStyle} mb-0`}>
-                  Password
-                </label>
-                <Link
-                  to="/forgot-password"
-                  className="text-[12px] font-bold text-[#008BDC] hover:underline">
-                  Forgot Password?
-                </Link>
-              </div>
+              <label className={labelStyle}>Password</label>
               <div className="relative">
                 <input
-                  id="password"
                   name="password"
                   type={showPassword ? "text" : "password"}
                   value={form.password}
                   onChange={handleChange}
-                  autoComplete="current-password"
                   required
                   placeholder="••••••••"
                   className={`${inputStyle} pr-12`}
@@ -253,61 +205,25 @@ const HRLogin = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#008BDC] focus:outline-none">
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
-            {/* Remember Me */}
-            <div className="flex items-center pt-1">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-[#008BDC] focus:ring-[#008BDC] border-gray-300 rounded cursor-pointer accent-[#008BDC]"
-              />
-              <label
-                htmlFor="remember-me"
-                className="ml-2 block text-[13px] font-semibold text-gray-500 cursor-pointer">
-                Remember me for 30 days
-              </label>
-            </div>
-
-            {/* Submit Action */}
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center items-center gap-2 py-3.5 px-4 rounded-lg text-[15px] font-bold text-white bg-[#008BDC] hover:bg-[#0073B6] shadow-[0_4px_14px_rgba(0,139,220,0.3)] transition-all active:scale-[0.98] disabled:opacity-70 disabled:shadow-none">
-                {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  "Access Dashboard"
-                )}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex justify-center items-center gap-2 py-3.5 rounded-lg text-[15px] font-bold text-white bg-[#008BDC] hover:bg-[#0073B6] transition-all active:scale-[0.98] disabled:opacity-70">
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                "Access Dashboard"
+              )}
+            </button>
           </form>
-
-          {/* CTA Redirect */}
-          <p className="mt-8 text-center text-[14px] font-medium text-gray-500">
-            Don't have an employer account?{" "}
-            <Link
-              to="/free-trial"
-              className="text-[#008BDC] font-bold hover:underline">
-              Start hiring today
-            </Link>
-          </p>
         </div>
       </div>
-
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        .pb-safe { padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
-      `,
-        }}
-      />
     </div>
   );
 };

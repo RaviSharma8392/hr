@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
-export default function PremiumHRNavbar() {
+export default function HRNavbar() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef(null);
 

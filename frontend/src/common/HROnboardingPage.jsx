@@ -1,20 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { auth, db } from "../firebase/firebase";
+import { signupUserWithEmail } from "../services/AuthService";
 
-import {
-  Briefcase,
-  Loader2,
-  ArrowRight,
-  User,
-  Building2,
-  Mail,
-  Lock,
-  Phone,
-  MapPin,
-} from "lucide-react";
+import { Briefcase, Loader2, ArrowRight } from "lucide-react";
 
 export default function HROnboardingPage() {
   const navigate = useNavigate();
@@ -47,33 +35,24 @@ export default function HROnboardingPage() {
     setError("");
 
     try {
-      // 1️⃣ Create Auth User
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
+      await signupUserWithEmail(
         form.email,
         form.password,
+        "hr", // 🔐 strict role
+        {
+          firstName: form.firstName,
+          lastName: form.lastName,
+          designation: form.designation,
+          phone: form.phone,
+          companyName: form.companyName,
+          location: form.location,
+          about: form.about,
+        },
       );
 
-      const uid = userCredential.user.uid;
-
-      // 2️⃣ Save HR Profile with UID as document ID
-      await setDoc(doc(db, "users", uid), {
-        uid,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        designation: form.designation,
-        phone: form.phone,
-        companyName: form.companyName,
-        location: form.location,
-        about: form.about,
-        email: form.email,
-        role: "hr",
-        createdAt: new Date(),
-      });
-
-      navigate("/hr");
+      navigate("/hr", { replace: true });
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Failed to create HR account.");
     } finally {
       setLoading(false);
     }
@@ -85,7 +64,7 @@ export default function HROnboardingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#e8f3ff] flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-4xl bg-white shadow-xl rounded-2xl overflow-hidden grid md:grid-cols-2">
-        {/* LEFT SIDE DESIGN */}
+        {/* LEFT DESIGN */}
         <div className="bg-[#008BDC] text-white p-10 flex flex-col justify-center">
           <div className="flex items-center gap-3 mb-6">
             <Briefcase size={28} />
@@ -102,7 +81,7 @@ export default function HROnboardingPage() {
           </p>
         </div>
 
-        {/* RIGHT SIDE FORM */}
+        {/* FORM */}
         <div className="p-8 md:p-10">
           <h3 className="text-xl font-bold mb-6 text-gray-800">
             HR Registration
@@ -115,7 +94,6 @@ export default function HROnboardingPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* PERSONAL */}
             <div className="grid grid-cols-2 gap-4">
               <input
                 name="firstName"
@@ -153,7 +131,6 @@ export default function HROnboardingPage() {
               className={inputStyle}
             />
 
-            {/* COMPANY */}
             <input
               name="companyName"
               placeholder="Company Name"
@@ -182,7 +159,6 @@ export default function HROnboardingPage() {
               className={inputStyle}
             />
 
-            {/* AUTH SECTION */}
             <input
               type="email"
               name="email"
@@ -204,7 +180,6 @@ export default function HROnboardingPage() {
               className={inputStyle}
             />
 
-            {/* SUBMIT */}
             <button
               type="submit"
               disabled={loading}

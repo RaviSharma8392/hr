@@ -2,16 +2,12 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../firebase/firebase";
-
+import { auth, db } from "../firebase/firebase";
+import { doc, getDoc } from "firebase/firestore";
 import {
   getCurrentUser,
   logout as logoutService,
 } from "../services/AuthService";
-
-import { doc, getDoc } from "firebase/firestore";
-
-import { db } from "../firebase/firebase";
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
@@ -19,8 +15,13 @@ export const useAuth = () => useContext(AuthContext);
 const USER_COLLECTION = "users";
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => getCurrentUser());
-  const [loading, setLoading] = useState(true);
+  // 1. Instantly load cached user from localStorage
+  const cachedUser = getCurrentUser();
+  const [user, setUser] = useState(cachedUser);
+
+  // 2. CRITICAL FIX: If we have a cached user, DO NOT block the UI.
+  // Let the app render instantly while Firebase syncs in the background.
+  const [loading, setLoading] = useState(!cachedUser);
 
   /* ---------------------------------------
      Sync Firebase Auth with Firestore
@@ -39,21 +40,27 @@ export const AuthProvider = ({ children }) => {
               ...snap.data(),
             };
 
+            // Update state silently with fresh database data
             setUser(profile);
             localStorage.setItem("app_user", JSON.stringify(profile));
           } else {
-            // Profile missing → force logout
+            // Profile missing in DB → force logout
             await logoutService();
             setUser(null);
+            localStorage.removeItem("app_user");
           }
         } catch (error) {
-          console.error("Auth sync error:", error);
-          setUser(null);
+          console.error("Auth sync error (Likely offline):", error);
+          // CRITICAL FIX: Do NOT set user to null here!
+          // If the network is down, we want to keep using the cached user from localStorage.
         }
       } else {
+        // Firebase explicitly confirmed the user is logged out
         setUser(null);
+        localStorage.removeItem("app_user");
       }
 
+      // Sync complete, release loading lock (if it was even locked)
       setLoading(false);
     });
 
@@ -66,6 +73,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     await logoutService();
     setUser(null);
+    localStorage.removeItem("app_user");
   };
 
   /* ---------------------------------------
@@ -80,12 +88,15 @@ export const AuthProvider = ({ children }) => {
     logout,
     isAuthenticated: !!user,
     isCandidate: role === "candidate",
-    isCompany: role === "company",
+    isCompany: role === "company", // Or 'company_admin' based on your App.js
     isHR: role === "hr",
   };
 
   return (
     <AuthContext.Provider value={value}>
+      {/* Because loading is false immediately if localStorage has data, 
+        the app renders instantly with zero blank screens. 
+      */}
       {!loading && children}
     </AuthContext.Provider>
   );

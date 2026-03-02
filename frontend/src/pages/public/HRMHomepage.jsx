@@ -8,10 +8,13 @@ import {
   ShieldCheck,
   CheckCircle2,
 } from "lucide-react";
+import Navbar from "../../user/components/ui/Navbar";
+import HRFooter from "../../company/components/HRFooter";
 
 const HRMHomepage = () => {
   return (
     <div className="min-h-screen bg-[#F8F9FA] font-sans text-[#484848] selection:bg-blue-100 selection:text-[#008BDC]">
+      <Navbar />
       {/* ========================================================= */}
       {/* HERO SECTION */}
       {/* ========================================================= */}
@@ -125,6 +128,7 @@ const HRMHomepage = () => {
           />
         </div>
       </main>
+      <HRFooter />
     </div>
   );
 };
