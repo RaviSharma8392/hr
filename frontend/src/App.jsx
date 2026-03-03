@@ -9,46 +9,36 @@ import {
 import { useAuth } from "./context/AuthContext";
 import { Briefcase } from "lucide-react";
 
-/* ========================================================= */
-/* 🚀 EAGER LOADING (CRITICAL PATH)                          */
-/* These load instantly without extra network requests.      */
-/* ========================================================= */
 import AppLayout from "./user/layout/AppLayput";
-import HRLayout from "./company/features/jobs/layout/HRLayout";
-import HRMHomepage from "./pages/public/HRMHomepage";
-import CandidateLoginPage from "./pages/CandidateLoginPage";
-import CandidateSignupPage from "./pages/CandidateSignupPage";
-import HRLogin from "./pages/public/HRLogin";
-import UnauthorizedPage from "./pages/UnauthorizedPage";
-import ContactSales from "./pages/public/ContactSales";
-import CompanyFreeTrial from "./pages/public/CompanyFreeTrial";
+import HRMHomepage from "./public/pages/HRMHomepage";
+import CandidateLoginPage from "./candidate/pages/auth/CandidateLoginPage";
+import CandidateSignupPage from "./candidate/pages/auth/CandidateSignupPage";
+import HRLogin from "./hr/pages/auth/HRLogin";
+import UnauthorizedPage from "./public/pages/UnauthorizedPage";
+import ContactSales from "./public/pages/ContactSales";
+import CompanyFreeTrial from "./hr/pages/auth/CompanyFreeTrial";
+import MainHRLayout from "./hr/layout/MainHRLayout";
+import ExploreJobLayout from "./candidate/layout/ExploreJobLayout";
 
 /* ========================================================= */
 /* 🐢 LAZY LOADING (NON-CRITICAL / PROTECTED ROUTES)         */
 /* These load in the background only when needed.            */
 /* ========================================================= */
-const CompanyDashboard = lazy(() => import("./company/pages/CompanyDashboard"));
-const CompanyJobsPage = lazy(
-  () => import("./company/features/jobs/pages/CompanyJobsPage"),
-);
+const CompanyJobsPage = lazy(() => import("./hr/pages/job/HRJobsPage"));
 const JobDetailsPage = lazy(
   () => import("./company/features/jobs/pages/JobDetailsPage"),
 );
-const JobPostPage = lazy(
-  () => import("./company/features/jobs/pages/JobPostPage"),
-);
+const JobPostPage = lazy(() => import("./hr/pages/postJob/JobPostPage"));
 const JobApplicationForm = lazy(
   () => import("./company/features/jobs/pages/JobApplicationForm"),
 );
-const HRDashboard = lazy(
-  () => import("./company/features/jobs/pages/HRDashboard"),
-);
-const HRSettingsPage = lazy(
-  () => import("./company/features/setting/HRSettingsPage"),
-);
+const HRDashboard = lazy(() => import("./hr/pages/dashboard/HRDashboard"));
+const HRSettingsPage = lazy(() => import("./hr/pages/setting/HRSettingsPage"));
 const HROnboardingPage = lazy(() => import("./common/HROnboardingPage"));
+const HRProfilePage = lazy(() => import("./hr/pages/profile/HRProfilePage"));
+
 const JobsPage = lazy(() => import("./user/features/jobs/pages/JobsPage"));
-const JobLayout = lazy(() => import("./user/layout/JobLayout"));
+// const JobLayout = lazy(() => import("./user/layout/JobLayout"));
 const CandidateOnboarding = lazy(
   () => import("./candidate/pages/CandidateOnboarding"),
 );
@@ -130,9 +120,17 @@ const App = () => {
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
           {/* PUBLIC JOB LISTINGS */}
-          <Route element={<AppLayout />}>
+          <Route
+            path="/company/jobs/:id/apply"
+            element={<JobApplicationForm />}
+          />
+          <Route element={<ExploreJobLayout />}>
+            <Route path="/company/jobs" element={<JobsPage />} />
             <Route path="/jobs" element={<JobsPage />} />
-            <Route path="/jobs/:id" element={<JobDetailsPage />} />
+            <Route
+              path="/companyName/:id/:title"
+              element={<JobDetailsPage />}
+            />{" "}
           </Route>
 
           <Route path="jobs/:id/apply" element={<JobApplicationForm />} />
@@ -156,7 +154,7 @@ const App = () => {
             element={
               <PrivateRoute allowedRoles={["company_admin", "admin"]} />
             }>
-            <Route path="/company/dashboard" element={<CompanyDashboard />} />
+            {/* <Route path="/company/dashboard" element={<CompanyDashboard />} /> */}
             <Route path="/company/jobs" element={<CompanyJobsPage />} />
             <Route path="/company/jobs/create" element={<JobPostPage />} />
           </Route>
@@ -166,13 +164,18 @@ const App = () => {
             element={
               <PrivateRoute allowedRoles={["hr", "company_admin", "admin"]} />
             }>
+            <Route path="/hr/profile" element={<HRProfilePage />} />
+            <Route path="/hr/post-job" element={<JobPostPage />} />
+            <Route path="/hr/jobs" element={<CompanyJobsPage />} />
+            <Route path="/hr/settings" element={<HRSettingsPage />} />
+
             <Route path="/onboarding/hr" element={<HROnboardingPage />} />
-            <Route path="/hr" element={<HRLayout />}>
+            <Route path="/hr" element={<MainHRLayout />}>
               <Route index element={<HRDashboard />} />
               <Route path="jobs" element={<CompanyJobsPage />} />
+              <Route path="profile" element={<HRProfilePage />} />
+
               <Route path="jobs/:id" element={<JobDetailsPage />} />
-              <Route path="post-job" element={<JobPostPage />} />
-              <Route path="settings" element={<HRSettingsPage />} />
             </Route>
           </Route>
 

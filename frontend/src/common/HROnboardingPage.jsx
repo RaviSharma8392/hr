@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { signupUserWithEmail } from "../services/AuthService";
+import { signupUserWithEmail } from "../services/auth/AuthService";
 
 import { Briefcase, Loader2, ArrowRight } from "lucide-react";
 

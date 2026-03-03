@@ -1,6 +1,6 @@
 // services/hrOnboarding.service.js
 
-import { db } from '../firebase/firebase'; // Import your Firestore instance
+import { db } from '../services/firebase/firebase'; // Import your Firestore instance
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 /**

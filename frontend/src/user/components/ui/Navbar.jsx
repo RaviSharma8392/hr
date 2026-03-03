@@ -170,10 +170,10 @@ const Navbar = () => {
               <BookOpen size={18} className="text-gray-400" /> Resources
             </NavLink>
             <NavLink
-              to="/pricing"
+              to="/company/jobs"
               onClick={() => setIsMobileMenuOpen(false)}
               className={getMobileNavLinkClass}>
-              <CreditCard size={18} className="text-gray-400" /> Pricing
+              <CreditCard size={18} className="text-gray-400" /> Testing Company
             </NavLink>
           </div>
 

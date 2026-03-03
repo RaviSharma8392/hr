@@ -57,7 +57,8 @@ const AppJobCard = ({ job = {} }) => {
 
   const handelViewDetails = () => {
     navigate(
-      `/companyName/${job.id}/${job.title.replace(/\s+/g, "-").toLowerCase()}`,
+      // `/companyName/${job.id}/${job.title.replace(/\s+/g, "-").toLowerCase()}`,
+      `/companyName/${"AkfOO1BrP4JA2RAJj0Tv"}/${job.title.replace(/\s+/g, "-").toLowerCase()}`,
     );
   };
 

@@ -12,7 +12,7 @@ import {
   Lock,
 } from "lucide-react";
 
-import { JobService } from "../services/job.service";
+import { JobService } from "../../../../hr/services/job.service";
 import ApplicationStepper from "../../application/components/ApplicationStepper";
 import ApplicationStep1 from "../../application/components/ApplicationStep1";
 import ApplicationStep2 from "../../application/components/ApplicationStep2";

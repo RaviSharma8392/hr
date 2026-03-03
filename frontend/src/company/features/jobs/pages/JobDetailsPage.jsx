@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   MapPin,
   Briefcase,
@@ -13,29 +13,53 @@ import {
   Hash,
   Check,
 } from "lucide-react";
-import { JobService } from "../services/job.service";
+import { JobService } from "../../../../hr/services/job.service";
+import { fetchCompanyBranding } from "../../../../candidate/service/companyNavbarService"; // Added White-Label Service
 
 export default function HRMCareersJobDetails() {
   const { id } = useParams();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [brand, setBrand] = useState(null); // Added Brand State
 
+  const navigate = useNavigate();
+
+  // Load Job and Branding Data
   useEffect(() => {
-    const loadJob = async () => {
+    const loadData = async () => {
       setLoading(true);
-      const res = await JobService.getJobById(id);
-      if (res.success) {
-        setJob(res);
+      try {
+        // Fetch both job details and brand settings simultaneously
+        const [jobRes, brandRes] = await Promise.all([
+          JobService.getJobById(id),
+          fetchCompanyBranding(),
+        ]);
+
+        if (jobRes.success) {
+          setJob(jobRes);
+        }
+        setBrand(brandRes);
+      } catch (error) {
+        console.error("Error loading data", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
-    loadJob();
+    loadData();
   }, [id]);
+
+  // Fallbacks for White-Labeling
+  const themeColor = brand?.themeColor || "#008bdc";
+  const displayCompanyName =
+    job?.company?.name || brand?.name || "Company Careers";
 
   if (loading)
     return (
       <div className="h-screen flex justify-center items-center bg-white">
-        <div className="w-8 h-8 border-4 border-[#008bdc] border-t-transparent rounded-full animate-spin" />
+        <div
+          className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin"
+          style={{ borderColor: themeColor, borderTopColor: "transparent" }}
+        />
       </div>
     );
 
@@ -47,10 +71,16 @@ export default function HRMCareersJobDetails() {
           This job requisition is no longer active or has been filled.
         </p>
         <Link
-          to="/jobs"
-          className="w-full sm:w-auto px-8 py-3 bg-[#008bdc] text-white rounded-md font-medium hover:bg-[#0073b6] transition-colors">
+          to="/company/jobs"
+          className="w-full sm:w-auto px-8 py-3 text-white rounded-md font-medium transition-all brand-bg-hover"
+          style={{ backgroundColor: themeColor }}>
           View Open Roles
         </Link>
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `.brand-bg-hover:hover { filter: brightness(0.9); }`,
+          }}
+        />
       </div>
     );
   }
@@ -81,13 +111,13 @@ export default function HRMCareersJobDetails() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
           <Link
             to="/jobs"
-            className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-[#008bdc] transition-colors">
+            className="flex items-center gap-1.5 text-sm font-medium text-gray-600 transition-colors brand-text-hover">
             <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="hidden sm:inline">Back to Current Openings</span>
             <span className="sm:hidden">Back</span>
           </Link>
           <div className="text-sm font-bold text-gray-900 line-clamp-1 max-w-[50%] text-right">
-            {job.company?.name || "Company Careers"}
+            {displayCompanyName}
           </div>
         </div>
       </div>
@@ -146,11 +176,11 @@ export default function HRMCareersJobDetails() {
           {/* Company Intro */}
           <section>
             <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
-              About {job.company?.name || "Us"}
+              About {displayCompanyName}
             </h2>
             <div className="text-[15px] sm:text-base text-gray-700 leading-relaxed">
               {job.company?.about ||
-                `Join our team at ${job.company?.name || "our company"}. We are looking for passionate individuals to help us build the future.`}
+                `Join our team at ${displayCompanyName}. We are looking for passionate individuals to help us build the future.`}
             </div>
           </section>
 
@@ -177,7 +207,10 @@ export default function HRMCareersJobDetails() {
                   <li
                     key={i}
                     className="flex items-start gap-3 text-[15px] sm:text-base text-gray-700 leading-relaxed">
-                    <Check className="w-5 h-5 text-[#008bdc] shrink-0 mt-0.5" />
+                    <Check
+                      className="w-5 h-5 shrink-0 mt-0.5"
+                      style={{ color: themeColor }}
+                    />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -228,7 +261,10 @@ export default function HRMCareersJobDetails() {
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               Ready to join us?
             </h2>
-            <button className="bg-[#008bdc] hover:bg-[#0073b6] text-white px-8 py-3.5 rounded-md text-base font-semibold transition-colors shadow-sm flex items-center gap-2 w-auto justify-center">
+            <button
+              onClick={() => navigate(`/company/jobs/${job.id}/apply`)}
+              className="text-white px-8 py-3.5 rounded-md text-base font-semibold transition-all brand-bg-hover shadow-sm flex items-center gap-2 w-auto justify-center"
+              style={{ backgroundColor: themeColor }}>
               Apply for this job <ExternalLink className="w-4 h-4" />
             </button>
           </div>
@@ -239,7 +275,10 @@ export default function HRMCareersJobDetails() {
           <div className="sticky top-24">
             {/* Action Card */}
             <div className="mb-8">
-              <button className="w-full bg-[#008bdc] hover:bg-[#0073b6] text-white py-4 rounded-md text-base font-semibold transition-colors shadow-sm flex items-center justify-center gap-2 mb-3">
+              <button
+                onClick={() => navigate(`/company/jobs/${job.id}/apply`)}
+                className="w-full text-white py-4 rounded-md text-base font-semibold transition-all brand-bg-hover shadow-sm flex items-center justify-center gap-2 mb-3"
+                style={{ backgroundColor: themeColor }}>
                 Apply for this job
               </button>
               <button className="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-3.5 rounded-md text-[15px] font-semibold transition-colors flex items-center justify-center gap-2">
@@ -300,10 +339,23 @@ export default function HRMCareersJobDetails() {
         <button className="p-3.5 border border-gray-300 rounded-md text-gray-600 hover:bg-gray-50 flex items-center justify-center transition-colors">
           <Share2 className="w-5 h-5" />
         </button>
-        <button className="flex-1 bg-[#008bdc] text-white py-3.5 rounded-md text-base font-semibold active:scale-95 transition-transform shadow-sm">
+        <button
+          onClick={() => navigate(`/company/jobs/${job.id}/apply`)}
+          className="flex-1 text-white py-3.5 rounded-md text-base font-semibold active:scale-95 transition-all brand-bg-hover shadow-sm"
+          style={{ backgroundColor: themeColor }}>
           Apply Now
         </button>
       </div>
+
+      {/* DYNAMIC STYLES FOR HOVERS (Preserves Design Structure) */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        .brand-text-hover:hover { color: ${themeColor} !important; }
+        .brand-bg-hover:hover { filter: brightness(0.9); }
+      `,
+        }}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom"; // ADDED useParams
-import { defaultJobForm } from "../../../../hr/schema/job.schema";
-import { JobService } from "../services/job.service";
+import { defaultJobForm } from "../../schema/job.schema";
+import { JobService } from "../../services/job.service";
 import {
   ChevronLeft,
   X,
@@ -12,16 +12,16 @@ import {
   Loader2,
 } from "lucide-react";
 
-import StepBasicInfo from "../components/StepBasicInfo";
-import StepContent from "../components/StepContent";
-import StepCompensation from "../components/StepCompensation";
-import StepScreening from "../components/StepScreening";
-import StepApplication from "../components/StepApplication";
-import StepReview from "../components/StepReview";
-import Stepper from "../components/Stepper";
-import Notification from "../../../../common/Notification";
+import StepBasicInfo from "../../../company/features/jobs/components/StepBasicInfo";
+import StepContent from "../../../company/features/jobs/components/StepContent";
+import StepCompensation from "../../../company/features/jobs/components/StepCompensation";
+import StepScreening from "../../../company/features/jobs/components/StepScreening";
+import StepApplication from "../../../company/features/jobs/components/StepApplication";
+import StepReview from "../../../company/features/jobs/components/StepReview";
+import Stepper from "../../../company/features/jobs/components/Stepper";
+import Notification from "../../../common/Notification";
 import { getDocs, collection } from "firebase/firestore";
-import { db } from "../../../../services/firebase/firebase";
+import { db } from "../../../services/firebase/firebase";
 
 const JobPostPage = () => {
   const navigate = useNavigate();
