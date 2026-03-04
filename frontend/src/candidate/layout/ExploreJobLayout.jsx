@@ -1,12 +1,12 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
-import PoweredBy from "../../user/features/jobs/components/PoweredBy";
-import CareerNavbar from "../../user/features/jobs/components/CareerNavbar";
+import CompanyCareerNavbar from "../../modules/public/components/job/CompanyCareerNavbar";
+import PoweredBy from "../../modules/public/components/job/PoweredBy";
 
 const ExploreJobLayout = () => {
   return (
     <div>
-      <CareerNavbar />
+      <CompanyCareerNavbar />
       <Outlet />
       <PoweredBy />
     </div>
