@@ -4,40 +4,14 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
-    base: "/",
+  base: "/",
   plugins: [
     react(),
     tailwindcss(),
-   VitePWA({
-  registerType: "autoUpdate",
-
-  manifest: {
-    name: "HRMastery",
-    short_name: "HRMastery",
-    description: "Modern Job Platform",
-
-    start_url: "/welcome",
-    scope: "/",
-
-    display: "standalone",
-    theme_color: "#008BDC",
-    background_color: "#F8F9FA",
-
-    orientation: "portrait",
-
-    icons: [
-      {
-        src: "/pwa-192x192.png",
-        sizes: "192x192",
-        type: "image/png",
-      },
-      {
-        src: "/pwa-512x512.png",
-        sizes: "512x512",
-        type: "image/png",
-      },
-    ],
-  },
-}),
+    VitePWA({
+      registerType: "autoUpdate",
+      manifest: false, // ⬅️ Important
+      includeAssets: ["pwa-192x192.png", "pwa-512x512.png"],
+    }),
   ],
 });

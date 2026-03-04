@@ -1,18 +1,21 @@
 {
   "name": "HRMastery",
   "short_name": "HRMastery",
-  "start_url": "/",
+  "description": "Modern Job Platform",
+  "start_url": "/welcome",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
   "theme_color": "#008BDC",
+  "background_color": "#F8F9FA",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/pwa-192x192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/icon-192.png",
+      "src": "/pwa-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
