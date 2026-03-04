@@ -1,5 +1,5 @@
-import EmployerSignupDesktop from "../../pages/EmployerSignupDesktop";
-import HRRegisterMobile from "../../pages/HRRegisterMobile";
+import HRRegisterDesktop from "../../../pages/register/HRRegisterDesktop";
+import HRRegisterMobile from "../../../pages/register/HRRegisterMobile";
 
 export default function HRRegisterContainer() {
   return (
@@ -9,7 +9,7 @@ export default function HRRegisterContainer() {
       </div>
 
       <div className="hidden md:block">
-        <EmployerSignupDesktop />
+        <HRRegisterDesktop />
       </div>
     </>
   );

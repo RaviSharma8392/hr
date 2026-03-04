@@ -1,18 +1,22 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth, db } from "../services/firebase/firebase";
+import { auth } from "../services/firebase/firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { db } from "../services/firebase/firebase";
 
 import {
   getCurrentUser,
   logout as logoutService,
 } from "../services/auth/AuthService";
 
+import {
+  setItem,
+  removeItem,
+} from "../services/localStorage/localStorage.service";
+
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  /* Load cached user first (Offline Support) */
   const cachedUser = getCurrentUser();
 
   const [user, setUser] = useState(cachedUser);
@@ -21,32 +25,46 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let mounted = true;
 
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (!mounted) return;
 
       try {
         if (firebaseUser) {
+          if (!firebaseUser.emailVerified) {
+            setUser(null);
+            removeItem("app_user");
+            setLoading(false);
+            return;
+          }
+
           const userRef = doc(db, "users", firebaseUser.uid);
           const snap = await getDoc(userRef);
 
-          if (snap.exists()) {
-            const profile = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              ...snap.data(),
-            };
-
-            setUser(profile);
-            localStorage.setItem("app_user", JSON.stringify(profile));
+          if (!snap.exists()) {
+            throw new Error("Profile missing");
           }
+
+          const profile = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            emailVerified: firebaseUser.emailVerified,
+            ...snap.data(),
+          };
+
+          if (!profile.isActive) {
+            setUser(null);
+            removeItem("app_user");
+            setLoading(false);
+            return;
+          }
+
+          setUser(profile);
+          setItem("app_user", profile);
         } else {
           setUser(null);
-          localStorage.removeItem("app_user");
+          removeItem("app_user");
         }
-      } catch (err) {
-        /* ⭐ OFFLINE MODE */
-        console.log("Offline mode detected");
-
+      } catch {
         const cached = getCurrentUser();
         setUser(cached);
       }
@@ -63,7 +81,6 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     await logoutService();
     setUser(null);
-    localStorage.removeItem("app_user");
   };
 
   const role = user?.role;

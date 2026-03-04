@@ -2,14 +2,13 @@ import React, { useState } from "react";
 import {
   loginWithEmail,
   loginWithGoogle,
-} from "../../services/auth/AuthService";
+} from "../../../../app/services/auth/AuthService";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Loader2, Briefcase, ChevronLeft, AlertCircle } from "lucide-react";
 
 export default function LoginMobile() {
   const navigate = useNavigate();
-  const location = useLocation(); // ✅ FIXED
-
+  const location = useLocation();
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -219,7 +218,7 @@ export default function LoginMobile() {
         <div className="mt-10 text-center text-[15px] text-gray-600 pb-6">
           New to HRMastery?{" "}
           <Link
-            to={`/register/${role}`}
+            to={`/${role}/register`}
             className="text-[#008BDC] font-semibold hover:underline">
             Join now
           </Link>

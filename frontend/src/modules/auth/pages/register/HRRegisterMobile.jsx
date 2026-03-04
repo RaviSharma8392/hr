@@ -3,17 +3,19 @@ import { useNavigate } from "react-router-dom";
 import {
   signupUserWithEmail,
   loginWithGoogle,
-} from "../../../app/services/auth/AuthService";
+} from "../../../../app/services/auth/AuthService";
 
-import MobileStep0 from "../components/hrRegisterSteps/MobileStep0";
-import MobileStep1 from "../components/hRRegisterSteps/MobileStep1";
-import MobileStep2 from "../components/hRRegisterSteps/MobileStep2";
-import MobileStep3 from "../components/hRRegisterSteps/MobileStep3";
+import MobileStep0 from "../../components/hrRegisterSteps/MobileStep0";
+import MobileStep1 from "../../components/hrRegisterSteps/MobileStep1";
+import MobileStep2 from "../../components/hrRegisterSteps/MobileStep2";
+import MobileStep3 from "../../components/hrRegisterSteps/MobileStep3";
 
 import { ChevronLeft, Briefcase } from "lucide-react";
 
 export default function HRRegisterMobile() {
   const navigate = useNavigate();
+
+  const ROLE = "hr";
 
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -27,6 +29,34 @@ export default function HRRegisterMobile() {
     companySize: "",
   });
 
+  /* -------------------- Helpers -------------------- */
+
+  const routeToDashboard = () => {
+    navigate("/hr/dashboard");
+  };
+
+  const validateStep1 = () => {
+    if (!form.fullName.trim()) return "Full name is required.";
+
+    if (!form.email.trim()) return "Email is required.";
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) return "Invalid email format.";
+
+    if (!form.password) return "Password is required.";
+
+    if (form.password.length < 6)
+      return "Password must be at least 6 characters.";
+
+    return null;
+  };
+
+  const validateStep2 = () => {
+    if (!form.companyName.trim()) return "Company name is required.";
+    if (!form.companySize) return "Company size is required.";
+    return null;
+  };
+
   /* -------------------- Handlers -------------------- */
 
   const handleChange = (e) => {
@@ -34,6 +64,24 @@ export default function HRRegisterMobile() {
   };
 
   const nextStep = () => {
+    setError("");
+
+    if (step === 1) {
+      const validationError = validateStep1();
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+    }
+
+    if (step === 2) {
+      const validationError = validateStep2();
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+    }
+
     window.scrollTo({ top: 0, behavior: "smooth" });
     setStep((prev) => prev + 1);
   };
@@ -53,8 +101,13 @@ export default function HRRegisterMobile() {
       setLoading(true);
       setError("");
 
-      await loginWithGoogle("hr");
-      navigate("/hr/dashboard");
+      const user = await loginWithGoogle(ROLE);
+
+      if (user.role !== ROLE) {
+        throw new Error(`This Google account is registered as ${user.role}.`);
+      }
+
+      routeToDashboard();
     } catch (err) {
       setError(err.message || "Google signup failed.");
     } finally {
@@ -67,17 +120,23 @@ export default function HRRegisterMobile() {
   const handleSubmit = async () => {
     if (loading) return;
 
+    const validationError = validateStep1() || validateStep2();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
 
-      await signupUserWithEmail(form.email, form.password, "hr", {
-        fullName: form.fullName,
-        companyName: form.companyName,
+      await signupUserWithEmail(form.email.trim(), form.password, ROLE, {
+        fullName: form.fullName.trim(),
+        companyName: form.companyName.trim(),
         companySize: form.companySize,
       });
 
-      navigate("/hr/dashboard");
+      routeToDashboard();
     } catch (err) {
       setError(err.message || "Registration failed.");
     } finally {
@@ -85,7 +144,7 @@ export default function HRRegisterMobile() {
     }
   };
 
-  /* -------------------- Render -------------------- */
+  /* -------------------- Render Step -------------------- */
 
   const renderStep = () => {
     switch (step) {
@@ -98,6 +157,7 @@ export default function HRRegisterMobile() {
             navigate={navigate}
           />
         );
+
       case 1:
         return (
           <MobileStep1
@@ -108,6 +168,7 @@ export default function HRRegisterMobile() {
             setError={setError}
           />
         );
+
       case 2:
         return (
           <MobileStep2
@@ -119,6 +180,7 @@ export default function HRRegisterMobile() {
             setError={setError}
           />
         );
+
       case 3:
         return (
           <MobileStep3
@@ -129,22 +191,19 @@ export default function HRRegisterMobile() {
             error={error}
           />
         );
+
       default:
         return null;
     }
   };
 
-  // Calculate strict progress percentage (0%, 33%, 66%, 100%)
   const progressPercentage = step === 0 ? 0 : (step / 3) * 100;
 
   return (
     <div className="flex flex-col h-[100dvh] bg-white font-sans overflow-hidden">
-      {/* ========================================== */}
-      {/* HEADER (Clean & Professional)              */}
-      {/* ========================================== */}
+      {/* HEADER */}
       <div className="relative z-20 bg-white pt-safe border-b border-gray-100">
         <div className="flex items-center justify-between px-3 h-[56px]">
-          {/* Left: Back Button */}
           <div className="w-12 flex justify-start">
             <button
               onClick={step > 0 ? prevStep : () => navigate("/")}
@@ -154,7 +213,6 @@ export default function HRRegisterMobile() {
             </button>
           </div>
 
-          {/* Center: Brand / Title */}
           <h2 className="text-[17px] font-semibold text-gray-900 tracking-tight flex items-center justify-center gap-1.5 flex-1">
             {step === 0 && (
               <>
@@ -171,15 +229,11 @@ export default function HRRegisterMobile() {
             {step === 3 && "Almost done"}
           </h2>
 
-          {/* Right: Step Counter */}
           <div className="w-12 flex justify-end text-[13px] font-semibold text-gray-500 pr-2">
             {step > 0 && `${step} / 3`}
           </div>
         </div>
 
-        {/* ========================================== */}
-        {/* CONTINUOUS PROGRESS BAR (LinkedIn Style)   */}
-        {/* ========================================== */}
         {step > 0 && (
           <div className="w-full h-1 bg-gray-100">
             <div
@@ -190,9 +244,6 @@ export default function HRRegisterMobile() {
         )}
       </div>
 
-      {/* ========================================== */}
-      {/* SCROLLABLE CONTENT WITH ANIMATIONS         */}
-      {/* ========================================== */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden bg-white">
         <div
           key={step}
@@ -201,13 +252,12 @@ export default function HRRegisterMobile() {
         </div>
       </div>
 
-      {/* Global Safe Area CSS */}
       <style
         dangerouslySetInnerHTML={{
           __html: `
-        .pt-safe { padding-top: max(0.5rem, env(safe-area-inset-top)); }
-        .pb-safe { padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
-      `,
+          .pt-safe { padding-top: max(0.5rem, env(safe-area-inset-top)); }
+          .pb-safe { padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
+        `,
         }}
       />
     </div>

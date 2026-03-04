@@ -43,20 +43,29 @@ const buildUserObject = (firebaseUser, profileData = {}) => ({
   ...profileData,
 });
 
+const enforceSecurityRules = (user, requiredRole = null) => {
+  if (!user?.isActive) {
+    throw new Error("Account disabled");
+  }
+
+  if (requiredRole && user.role !== requiredRole) {
+    throw new Error(`Access restricted to ${requiredRole} accounts only.`);
+  }
+
+  return true;
+};
+
 /* ================= PROFILE FETCH ================= */
 
 const getUserProfile = async (firebaseUser) => {
-  try {
-    const userRef = doc(db, USER_COLLECTION, firebaseUser.uid);
-    const snap = await getDoc(userRef);
+  const userRef = doc(db, USER_COLLECTION, firebaseUser.uid);
+  const snap = await getDoc(userRef);
 
-    if (!snap.exists()) throw new Error("Profile not found");
-
-    return buildUserObject(firebaseUser, snap.data());
-  } catch {
-    // Offline fallback
-    return getCurrentUser();
+  if (!snap.exists()) {
+    throw new Error("Profile not found");
   }
+
+  return buildUserObject(firebaseUser, snap.data());
 };
 
 /* ================= SIGNUP ================= */
@@ -103,9 +112,13 @@ export const signupUserWithEmail = async (
   }
 };
 
-/* ================= LOGIN ================= */
+/* ================= EMAIL LOGIN ================= */
 
-export const loginWithEmail = async (email, password) => {
+export const loginWithEmail = async (
+  email,
+  password,
+  requiredRole = null
+) => {
   try {
     const credential = await signInWithEmailAndPassword(
       auth,
@@ -116,20 +129,12 @@ export const loginWithEmail = async (email, password) => {
     const firebaseUser = credential.user;
 
     if (!firebaseUser.emailVerified) {
-      throw new Error("Please verify your email");
+      throw new Error("Please verify your email before logging in.");
     }
 
-    let user;
+    const user = await getUserProfile(firebaseUser);
 
-    try {
-      user = await getUserProfile(firebaseUser);
-    } catch {
-      user = getCurrentUser();
-    }
-
-    if (!user?.isActive) {
-      throw new Error("Account disabled");
-    }
+    enforceSecurityRules(user, requiredRole);
 
     setItem(LOCAL_USER_KEY, user);
 
@@ -141,12 +146,11 @@ export const loginWithEmail = async (email, password) => {
 
 /* ================= GOOGLE LOGIN ================= */
 
-export const loginWithGoogle = async (defaultRole = "candidate") => {
+export const loginWithGoogle = async (requiredRole = null) => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
 
     const firebaseUser = result.user;
-
     const userRef = doc(db, USER_COLLECTION, firebaseUser.uid);
     const snap = await getDoc(userRef);
 
@@ -154,11 +158,17 @@ export const loginWithGoogle = async (defaultRole = "candidate") => {
 
     if (snap.exists()) {
       user = buildUserObject(firebaseUser, snap.data());
+
+      enforceSecurityRules(user, requiredRole);
     } else {
+      if (!requiredRole) {
+        throw new Error("Role required for first-time Google login.");
+      }
+
       const payload = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
-        role: defaultRole,
+        role: requiredRole,
         provider: "google",
         isActive: true,
         profileCompleted: false,
@@ -168,10 +178,6 @@ export const loginWithGoogle = async (defaultRole = "candidate") => {
       await setDoc(userRef, payload);
 
       user = buildUserObject(firebaseUser, payload);
-    }
-
-    if (!user?.isActive) {
-      throw new Error("Account disabled");
     }
 
     setItem(LOCAL_USER_KEY, user);
@@ -212,13 +218,8 @@ export const updateUserProfile = async (uid, updates) => {
 /* ================= LOGOUT ================= */
 
 export const logout = async () => {
-  try {
-    await firebaseSignOut(auth);
-
-    removeItem(LOCAL_USER_KEY);
-  } catch (error) {
-    throw new Error(normalizeError(error));
-  }
+  await firebaseSignOut(auth);
+  removeItem(LOCAL_USER_KEY);
 };
 
 /* ================= CACHE ================= */
@@ -227,7 +228,7 @@ export const getCurrentUser = () => {
   return getItem(LOCAL_USER_KEY);
 };
 
-/* ================= AUTH LISTENER ================= */
+/* ================= LISTENER ================= */
 
 export const listenAuthState = (callback) => {
   return onAuthStateChanged(auth, callback);
